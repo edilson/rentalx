@@ -6,7 +6,6 @@ import { CarsRepositoryInMemory } from '@modules/cars/repositories/in-memory/Car
 import { CreateCarUseCase } from '@modules/cars/useCases/createCar/CreateCarUserCase';
 import { AppError } from '@shared/errors/AppError';
 
-import { Rental } from '../infra/typeorm/entities/Rental';
 import { RentalsRepositoryInMemory } from '../repositories/in-memory/RentalsRepositoryInMemory';
 import { CreateRentalUseCase } from './CreateRentalUseCase';
 
