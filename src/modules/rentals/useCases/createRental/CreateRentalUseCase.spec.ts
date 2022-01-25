@@ -1,17 +1,22 @@
+import dayjs from 'dayjs';
+
 import { User } from '@modules/accounts/infra/typeorm/entities/User';
 import { UsersRepositoryInMemory } from '@modules/accounts/repositories/in-memory/UsersRepositoryInMemory';
 import { CreateUserUseCase } from '@modules/accounts/useCases/createUser/CreateUserUseCase';
 import { Car } from '@modules/cars/infra/typeorm/entities/Car';
 import { CarsRepositoryInMemory } from '@modules/cars/repositories/in-memory/CarsRepositoryInMemory';
 import { CreateCarUseCase } from '@modules/cars/useCases/createCar/CreateCarUserCase';
+import { DateProvider } from '@shared/container/providers/DateProvider/implementations/DateProvider';
 import { AppError } from '@shared/errors/AppError';
 
-import { RentalsRepositoryInMemory } from '../repositories/in-memory/RentalsRepositoryInMemory';
+import { RentalsRepositoryInMemory } from '../../repositories/in-memory/RentalsRepositoryInMemory';
 import { CreateRentalUseCase } from './CreateRentalUseCase';
 
 let rentalsRepositoryInMemory: RentalsRepositoryInMemory;
 let carsRepositoryInMemory: CarsRepositoryInMemory;
 let usersRepositoryInMemory: UsersRepositoryInMemory;
+
+let dateProvider: DateProvider;
 
 let createRentalUseCase: CreateRentalUseCase;
 let createCarUseCase: CreateCarUseCase;
@@ -29,7 +34,12 @@ describe('Create Rental', () => {
     carsRepositoryInMemory = new CarsRepositoryInMemory();
     usersRepositoryInMemory = new UsersRepositoryInMemory();
 
-    createRentalUseCase = new CreateRentalUseCase(rentalsRepositoryInMemory);
+    dateProvider = new DateProvider();
+
+    createRentalUseCase = new CreateRentalUseCase(
+      rentalsRepositoryInMemory,
+      dateProvider
+    );
     createCarUseCase = new CreateCarUseCase(carsRepositoryInMemory);
     createUserUseCase = new CreateUserUseCase(usersRepositoryInMemory);
 
@@ -77,7 +87,7 @@ describe('Create Rental', () => {
     await createRentalUseCase.execute({
       car_id: car2.id,
       user_id: user1.id,
-      expected_return_date: new Date(2022, 3, 20),
+      expected_return_date: dayjs().add(3, 'day').toDate(),
     });
   });
 
@@ -85,7 +95,7 @@ describe('Create Rental', () => {
     const rentalCreated = await createRentalUseCase.execute({
       car_id: '124',
       user_id: '32432',
-      expected_return_date: new Date(),
+      expected_return_date: dayjs().add(5, 'days').toDate(),
     });
 
     expect(rentalCreated).toHaveProperty('id');
@@ -97,7 +107,7 @@ describe('Create Rental', () => {
       await createRentalUseCase.execute({
         user_id: user1.id,
         car_id: car1.id,
-        expected_return_date: new Date(2022, 3, 8),
+        expected_return_date: dayjs().add(15, 'day').toDate(),
       });
     }).rejects.toBeInstanceOf(AppError);
   });
@@ -107,7 +117,17 @@ describe('Create Rental', () => {
       await createRentalUseCase.execute({
         user_id: user2.id,
         car_id: car1.id,
-        expected_return_date: new Date(2022, 3, 8),
+        expected_return_date: dayjs().add(23, 'day').toDate(),
+      });
+    }).rejects.toBeInstanceOf(AppError);
+  });
+
+  it('should not be able to rent a car when the rental period is less than 24 hours', async () => {
+    expect(async () => {
+      await createRentalUseCase.execute({
+        user_id: user2.id,
+        car_id: car1.id,
+        expected_return_date: dayjs().toDate(),
       });
     }).rejects.toBeInstanceOf(AppError);
   });
